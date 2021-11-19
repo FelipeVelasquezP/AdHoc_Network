@@ -1,46 +1,43 @@
 import socket
-import tqdm
 import os
+import random
+import time
 
-# Listar nombres de una carpeta
-# from os import listdir
+PORT = 5000
+ADDR = ('localhost', PORT)
+FORMAT = "utf-8"
 
-# def ls(ruta = '.'):
-#     return listdir(ruta)
+def main(archivo,url,SIZE):
+    client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-SEPARATOR = "<SEPARATOR>"
-BUFFER_SIZE = 4096 # send 4096 bytes each time step
+    client.connect(ADDR)
 
-# the ip address or hostname of the server, the receiver
-host = "localhost"
-# the port, let's use 5001
-port = 5001
-# the name of file we want to send, make sure it exists
-filename = r"C:\Users\Felipe Velasquez\Dropbox\My PC (DESKTOP-1LIROPU)\Downloads\FTTx.docx"
-# get the file size
-filesize = os.path.getsize(filename)
+    file = open(url, "r")
+    data = file.read()
 
-s = socket.socket()
+    client.send(archivo.encode(FORMAT))
+    msg = client.recv(SIZE).decode(FORMAT)
+    print(f"[SERVER]: {msg}")
 
-print(f"[+] Connecting to {host}:{port}")
-s.connect((host, port))
-print("[+] Connected.")
+    client.send(data.encode(FORMAT))
+    msg = client.recv(SIZE).decode(FORMAT)
+    print(f"[SERVER]: {msg}")
 
-s.send(f"{filename}{SEPARATOR}{filesize}".encode())
+    file.close()
 
-# start sending the file
-progress = tqdm.tqdm(range(filesize), f"Sending {filename}", unit="B", unit_scale=True, unit_divisor=1024)
-with open(filename, "rb") as f:
-    while True:
-        # read the bytes from the file
-        bytes_read = f.read(BUFFER_SIZE)
-        if not bytes_read:
-            # file transmitting is done
-            break
-        # we use sendall to assure transimission in 
-        # busy networks
-        s.sendall(bytes_read)
-        # update the progress bar
-        progress.update(len(bytes_read))
-# close the socket
-s.close()
+    client.close()
+
+def getDirection():
+    url=r"/home/pablo/Documentos/pruebas/"
+    archivos=os.listdir(url)
+    ran=random.randint(0,len(archivos)-1)
+    SIZE = os.path.getsize(r"/home/pablo/Documentos/pruebas/"+archivos[ran])
+    url=url+archivos[ran]
+    return archivos[ran],url,SIZE
+
+
+if __name__ == "__main__":
+    while(True):
+        archivo,url,size=getDirection()
+        main(archivo,url,size)
+        time.sleep(3)
