@@ -1,47 +1,41 @@
 import socket
-import tqdm
-import os
-# device's IP address
-SERVER_HOST = "localhost"
-SERVER_PORT = 5001
-# receive 4096 bytes each time
-BUFFER_SIZE = 4096
-SEPARATOR = "<SEPARATOR>"
 
-s = socket.socket()
+IP = socket.gethostbyname(socket.gethostname())
+PORT = 5000
+ADDR = ('localhost', PORT)
+SIZE = 80000
+FORMAT = "utf-8"
 
-s.bind((SERVER_HOST, SERVER_PORT))
+def main():
+    print("[STARTING] Server is starting.")
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-s.listen(5)
-print(f"[*] Listening as {SERVER_HOST}:{SERVER_PORT}")
+    server.bind(ADDR)
 
-# accept connection if there is any
-client_socket, address = s.accept() 
-# if below code is executed, that means the sender is connected
-print(f"[+] {address} is connected.")
+    server.listen()
+    print("[LISTENING] Server is listening.")
 
-received = client_socket.recv(BUFFER_SIZE).decode()
-filename, filesize = received.split(SEPARATOR)
-# remove absolute path if there is
-filename = os.path.basename(filename)
-# convert to integer
-filesize = int(filesize)
-
-progress = tqdm.tqdm(range(filesize), f"Receiving {filename}", unit="B", unit_scale=True, unit_divisor=1024)
-with open(filename, "wb") as f:
     while True:
-        # read 1024 bytes from the socket (receive)
-        bytes_read = client_socket.recv(BUFFER_SIZE)
-        if not bytes_read:    
-            # nothing is received
-            # file transmitting is done
-            break
-        # write to the file the bytes we just received
-        f.write(bytes_read)
-        # update the progress bar
-        progress.update(len(bytes_read))
+        conn, addr = server.accept()
+        print(f"[NEW CONNECTION] {addr} connected.")
 
-# close the client socket
-client_socket.close()
-# close the server socket
-s.close()
+        filename = conn.recv(SIZE).decode(FORMAT)
+        print(f"[RECV] Receiving the filename.")
+        print("Se recibio el archivo "+filename)
+        print("Se Guardo el archivo "+filename)
+        file = open(r'/home/pablo/Documentos/Traffic/'+filename, "w")
+        conn.send("Filename received.".encode(FORMAT))
+
+        data = conn.recv(SIZE).decode(FORMAT)
+
+        print(f"[RECV] Receiving the file data.")
+        file.write(data)
+        conn.send("File data received".encode(FORMAT))
+
+        file.close()
+
+        conn.close()
+        print(f"[DISCONNECTED] {addr} disconnected.\n\n\n")
+
+if __name__ == "__main__":
+    main()
